@@ -1,0 +1,46 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "rdl-quantum-head"
+version = "0.1.0"
+description = "Quantum and matched-classical prediction heads for relational deep learning"
+readme = "README.md"
+license = {text = "MIT"}
+classifiers = [
+	"License :: OSI Approved :: MIT License",
+]
+requires-python=">=3.10"
+keywords=[]
+dependencies=[
+	"relbench==2.1.2",
+	"torch",
+	"pytorch_frame>=0.2.3",
+	"torch_geometric",
+	"pennylane",
+	"sentence-transformers",
+	"tqdm",
+	"pandas",
+	"numpy",
+]
+
+[project.optional-dependencies]
+test=[
+	"pytest",
+]
+dev=[
+	"pre-commit",
+]
+[project.urls]
+RelBench = "https://github.com/stanford-star/relbench"
+
+[tool.flit.module]
+name="quantum_model"
+
+[tool.pytest.ini_options]
+addopts = [
+	"--capture=no",
+	"--color=yes",
+	"-vv",
+]
