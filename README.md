@@ -1,4 +1,106 @@
-## QGNN Training Notes
+# rdl-quantum-head
+
+`rdl-quantum-head` provides quantum, residual-quantum, and matched classical
+prediction heads for relational deep learning experiments built on
+[RelBench](https://github.com/stanford-star/relbench).
+
+## RelBench compatibility
+
+This project is tested against and intentionally pins **RelBench 2.1.2**.
+The trainers use the RelBench 2.x APIs, including `relbench.datasets.get_dataset`
+and `relbench.tasks.get_task`. RelBench 3.x introduced a different dataset and
+task-loading interface and is not currently supported.
+
+RelBench must be installed in the same Python environment as this project, but
+its source folder must **not** be copied into this repository. Installing this
+project with `pip` installs `relbench==2.1.2` as a normal dependency. Python then
+loads it from the environment's `site-packages` directory.
+
+The expected repository layout is:
+
+```text
+rdl-quantum-head/
+├── quantum_model/              # prediction heads, graph encoders, and trainers
+├── run_prediction_head.py      # controlled experiment launcher
+├── pyproject.toml              # package metadata and dependencies
+├── pixi.toml                   # optional Pixi environment definition
+├── README.md
+└── LICENSE
+```
+
+Do not place a `relbench/` or `test/` directory beside `quantum_model/`.
+RelBench's own source code and upstream tests belong to the installed RelBench
+package, not to this repository.
+
+## Installation
+
+Python 3.10 or newer is required. A clean virtual environment is recommended.
+
+```bash
+git clone <repository-url> rdl-quantum-head
+cd rdl-quantum-head
+
+python -m venv .venv
+```
+
+Activate it on Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Or on Linux/macOS:
+
+```bash
+source .venv/bin/activate
+```
+
+Install a PyTorch build appropriate for the machine's CPU/CUDA environment
+first, following the [official PyTorch selector](https://pytorch.org/get-started/locally/).
+Then install this project in editable mode:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -e .
+```
+
+The second command installs this package together with `relbench==2.1.2`,
+PyTorch Geometric, PyTorch Frame, PennyLane, SentenceTransformers, and the other
+declared runtime dependencies. It does not clone RelBench into this repository.
+
+RelBench neighbor sampling also requires a `pyg-lib` wheel compatible with the
+installed PyTorch and CUDA versions. Select the matching wheel index from the
+[PyG installation guide](https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html).
+For example, the wheel URL must match the local `torch` version and either its
+CUDA tag or `cpu`; do not copy a CUDA-specific command from another machine.
+
+Verify the installation and the pinned RelBench version:
+
+```bash
+python -c "from importlib.metadata import version; import relbench, quantum_model; print('RelBench', version('relbench')); print('rdl-quantum-head', version('rdl-quantum-head'))"
+python run_prediction_head.py --help
+```
+
+The first command should report `RelBench 2.1.2`.
+
+## Data and cache location
+
+RelBench datasets are downloaded and cached at runtime; they are not stored
+inside the Git repository. The trainers use `~/.cache/relbench_examples` by
+default. Override this location with `--cache_dir`, for example:
+
+```bash
+python -m quantum_model.trainer.gnn_entity_2stage \
+  --dataset rel-f1 \
+  --task driver-position \
+  --cache_dir /path/to/relbench-cache
+```
+
+Use `--download` on the first run when the selected dataset/task is not already
+present in that cache. Later runs can reuse the same cache without changing the
+repository layout.
+
+## Training entrypoints
 
 This repository currently has three training entrypoints that matter for the maintained prediction-head workflow:
 
@@ -274,7 +376,7 @@ python run_prediction_head.py \
 Direct two-stage trainer call with a quantum prediction head:
 
 ```bash
-python quantum_model/trainer/gnn_entity_2stage.py \
+python -m quantum_model.trainer.gnn_entity_2stage \
   --dataset rel-f1 \
   --task driver-position \
   --gnn staged \
@@ -288,12 +390,3 @@ python quantum_model/trainer/gnn_entity_2stage.py \
   --prediction_head_q_ansatz_type rot_cnot_ring \
   --prediction_head_q_readout_mode z_pairwise
 ```
-
-
-This is the single-experiment building block for the next step, where multiple experiment dashboards can be compared across tasks.
-
-For a live local task browser that can load experiment folders directly from the page, open:
-
-`analysis_dashboards/task-browser.html`
-
-That entrypoint does not require a prebuilt `dashboard-data.js`. Use `Add task`, choose one experiment directory, and the page will parse `run_summary.csv`, optional `run_summary_agg.csv`, and `json_files/*.json` locally in the browser.
